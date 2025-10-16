@@ -7,3 +7,8 @@ database:
   maxopen: 100
   maxidle: 10
   maxlifetime: 300
+
+log:
+  max_size: 100
+  max_age: 60
+  path: "/tmp/applog/go-mall.log"

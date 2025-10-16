@@ -14,8 +14,8 @@ import (
 var configs embed.FS
 
 func init() {
-	env := os.Getenv("ENV")
-	if env == "" {
+	env, ok := os.LookupEnv("ENV")
+	if !ok || env == "" {
 		panic("env variable not set")
 	}
 
