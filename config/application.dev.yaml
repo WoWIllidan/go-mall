@@ -1,0 +1,9 @@
+app:
+  env: dev
+  name: go-mall
+database:
+  type: mysql
+  dsn: "reserved"
+  maxopen: 100
+  maxidle: 10
+  maxlifetime: 300
