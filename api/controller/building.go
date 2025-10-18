@@ -8,6 +8,7 @@ import (
 	"github.com/WoWBytePaladin/go-mall/common/errcode"
 	"github.com/WoWBytePaladin/go-mall/common/logger"
 	"github.com/WoWBytePaladin/go-mall/config"
+	"github.com/WoWBytePaladin/go-mall/logic/appservice"
 	"github.com/gin-gonic/gin"
 )
 
@@ -110,5 +111,16 @@ func TestResponseError(c *gin.Context) {
 	// 这一步正式开发时写在service层
 	err := errcode.Wrap("encountered an error when xxx service did xxx", baseErr)
 	app.NewResponse(c).Error(errcode.ErrServer.WithCause(err))
+	return
+}
+
+func TestGormLogger(c *gin.Context) {
+	svc := appservice.NewDemoAppSvc(c)
+	list, err := svc.GetDemoIdentities()
+	if err != nil {
+		app.NewResponse(c).Error(errcode.ErrServer.WithCause(err))
+		return
+	}
+	app.NewResponse(c).Success(list)
 	return
 }

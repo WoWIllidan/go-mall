@@ -1,9 +1,6 @@
 package dao
 
 import (
-	"context"
-
-	"github.com/WoWBytePaladin/go-mall/common/logger"
 	"github.com/WoWBytePaladin/go-mall/config"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
@@ -29,8 +26,12 @@ func init() {
 }
 
 func initDB(option config.DbConnectOption) *gorm.DB {
-	logger.New(context.TODO()).Info("database info", "db", option)
-	db, err := gorm.Open(mysql.Open("root:superpass@tcp(localhost:30306)/go_mall?charset=utf8&parseTime=True&loc=Asia%2FShanghai"), &gorm.Config{})
+	db, err := gorm.Open(
+		mysql.Open(option.DSN),
+		&gorm.Config{
+			Logger: NewGormLogger(),
+		},
+	)
 	if err != nil {
 		panic(err)
 	}

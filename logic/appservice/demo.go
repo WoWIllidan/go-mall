@@ -28,3 +28,18 @@ func NewDemoAppSvc(ctx context.Context) *DemoAppSvc {
 //	}
 //	......
 //}
+
+// GetDemoIdentities 配置GORM时的演示方法, 显的有点脑残,
+// 后面章节再解释怎么用ApplicationService 进行逻辑解耦
+func (das *DemoAppSvc) GetDemoIdentities() ([]int64, error) {
+	demos, err := das.demoDomainSvc.GetDemos()
+	if err != nil {
+		return nil, err
+	}
+	identities := make([]int64, 0, len(demos))
+
+	for _, demo := range demos {
+		identities = append(identities, demo.Id)
+	}
+	return identities, nil
+}
