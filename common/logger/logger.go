@@ -57,6 +57,7 @@ func (l *logger) log(lvl zapcore.Level, msg string, kv ...interface{}) {
 
 // getLoggerCallerInfo 日志调用者信息 -- 方法名, 文件名, 行号
 func (l *logger) getLoggerCallerInfo() (funcName, file string, line int) {
+
 	pc, file, line, ok := runtime.Caller(3) // 回溯拿调用日志方法的业务函数的信息
 	if !ok {
 		return

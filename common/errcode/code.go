@@ -4,7 +4,7 @@ import "net/http"
 
 var codes = map[int]string{}
 
-// 此处为公共的错误码, 预留 10000000 ~ 10000099 间的 100 个错误码
+//此处为公共的错误码, 预留 10000000 ~ 10000099 间的 100 个错误码
 var (
 	Success            = newError(0, "success")
 	ErrServer          = newError(10000000, "服务器内部错误")
