@@ -6,8 +6,10 @@ import "time"
 var (
 	App      *appConfig
 	Database *databaseConfig
+	Redis    *redisConfig
 )
 
+// App配置
 type appConfig struct {
 	Name string `mapstructure:"name"`
 	Env  string `mapstructure:"env"`
@@ -22,6 +24,7 @@ type appConfig struct {
 	}
 }
 
+// 数据库配置
 type databaseConfig struct {
 	Type   string          `mapstructure:"type"`
 	Master DbConnectOption `mapstructure:"master"`
@@ -33,4 +36,12 @@ type DbConnectOption struct {
 	MaxOpenConn int           `mapstructure:"maxopen""`
 	MaxIdleConn int           `mapstructure:"maxidle"`
 	MaxLifeTime time.Duration `mapstructure:"maxlifetime"`
+}
+
+// Redis 配置
+type redisConfig struct {
+	Addr     string `mapstructure:"addr"`
+	Password string `mapstructure:"password"`
+	PoolSize int    `mapstructure:"pool_size"`
+	DB       int    `mapstructure:"db"`
 }

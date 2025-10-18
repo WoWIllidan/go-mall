@@ -3,13 +3,11 @@ package config
 import (
 	"bytes"
 	"embed"
-	"os"
-
 	"github.com/spf13/viper"
+	"os"
 )
 
 // **嵌入文件只能在写embed指令的Go文件的同级目录或者子目录中
-//
 //go:embed *.yaml
 var configs embed.FS
 
@@ -30,4 +28,6 @@ func init() {
 	vp.UnmarshalKey("app", &App)
 
 	vp.UnmarshalKey("database", &Database)
+
+	vp.UnmarshalKey("redis", &Redis)
 }
