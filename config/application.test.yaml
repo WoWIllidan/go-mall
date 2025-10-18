@@ -1,6 +1,13 @@
 app:
   env: test
   name: go-mall
+  log:
+    path: "/home/applog/go-mall/go-mall.log"
+    max_size: 100 # 单个日志文件最大100M
+    max_age: 60 # 备份文件最多保存60天
+  pagination:
+    default_size: 20
+    max_size: 100
 database:
   type: mysql
   dsn: "reserved"

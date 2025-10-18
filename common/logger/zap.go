@@ -50,7 +50,7 @@ func getFileLogWriter() (writeSyncer zapcore.WriteSyncer) {
 	lumberJackLogger := &lumberjack.Logger{
 		Filename:  config.App.Log.FilePath,
 		MaxSize:   config.App.Log.FileMaxSize,      // 文件最大 100 M
-		MaxAge:    config.App.Log.BackupFileMaxAge, // 旧文件最多保留90天
+		MaxAge:    config.App.Log.BackUpFileMaxAge, // 旧文件最多保留90天
 		Compress:  false,
 		LocalTime: true,
 	}
