@@ -113,9 +113,41 @@ func DelRefreshToken(ctx context.Context, refreshToken string) error {
 	return Redis().Del(ctx, redisKey).Err()
 }
 
-// TODO Delete user's session of specific platform
+// DelUserSessionOnPlatform Delete user's session on specific platform
+func DelUserSessionOnPlatform(ctx context.Context, userId int64, platform string) error {
+	redisKey := fmt.Sprintf(enum.REDIS_KEY_USER_SESSION, userId)
+	return Redis().HDel(ctx, redisKey, platform).Err()
+}
 
-// TODO Delete user's session of all platform
+// DelUserSessions Delete user's sessions on all platform
+func DelUserSessions(ctx context.Context, userId int64) error {
+	redisKey := fmt.Sprintf(enum.REDIS_KEY_USER_SESSION, userId)
+	return Redis().Del(ctx, redisKey).Err()
+}
+
+// GetUserAllSessions 获取用户在所有platform上的Session
+func GetUserAllSessions(ctx context.Context, userId int64) (map[string]*do.SessionInfo, error) {
+	redisKey := fmt.Sprintf(enum.REDIS_KEY_USER_SESSION, userId)
+	result, err := Redis().HGetAll(ctx, redisKey).Result()
+	if err != nil && err != redis.Nil {
+		return nil, err
+	}
+	// key 不存在
+	if errors.Is(err, redis.Nil) {
+		return nil, nil
+	}
+	sessions := make(map[string]*do.SessionInfo)
+	for platform, sessionData := range result {
+		session := new(do.SessionInfo)
+		err = json.Unmarshal([]byte(sessionData), &session)
+		if err != nil {
+			return nil, err
+		}
+		sessions[platform] = session
+	}
+	//logger.New(ctx).Debug("hgetall user all session", "data", sessions)
+	return sessions, nil
+}
 
 func LockTokenRefresh(ctx context.Context, refreshToken string) (bool, error) {
 	redisLockKey := fmt.Sprintf(enum.REDISKEY_TOKEN_REFRESH_LOCK, refreshToken)

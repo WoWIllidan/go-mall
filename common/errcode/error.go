@@ -83,9 +83,13 @@ func (e *AppError) Clone() *AppError {
 }
 
 func newError(code int, msg string) *AppError {
-	if _, duplicated := codes[code]; duplicated {
-		panic(fmt.Sprintf("错误码 %d 不能重复, 请检查后更换", code))
+	if code > -1 {
+		if _, duplicated := codes[code]; duplicated {
+			panic(fmt.Sprintf("预定义错误码 %d 不能重复, 请检查后更换", code))
+		}
+		codes[code] = struct{}{}
 	}
+	
 	return &AppError{code: code, msg: msg}
 }
 

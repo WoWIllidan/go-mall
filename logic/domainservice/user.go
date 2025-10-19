@@ -9,15 +9,20 @@ import (
 	"github.com/WoWBytePaladin/go-mall/common/logger"
 	"github.com/WoWBytePaladin/go-mall/common/util"
 	"github.com/WoWBytePaladin/go-mall/dal/cache"
+	"github.com/WoWBytePaladin/go-mall/dal/dao"
 	"github.com/WoWBytePaladin/go-mall/logic/do"
 )
 
 type UserDomainSvc struct {
-	ctx context.Context
+	ctx     context.Context
+	userDao *dao.UserDao
 }
 
 func NewUserDomainSvc(ctx context.Context) *UserDomainSvc {
-	return &UserDomainSvc{ctx: ctx}
+	return &UserDomainSvc{
+		ctx:     ctx,
+		userDao: dao.NewUserDao(ctx),
+	}
 }
 
 // GetUserBaseInfo 因为还没开发注册登录功能, 这里先Mock一个返回
@@ -150,9 +155,82 @@ func (us *UserDomainSvc) VerifyAccessToken(accessToken string) (*do.TokenVerify,
 	if tokenInfo != nil && tokenInfo.UserId != 0 {
 		tokenVerify.UserId = tokenInfo.UserId
 		tokenVerify.SessionId = tokenInfo.SessionId
+		tokenVerify.Platform = tokenInfo.Platform
 		tokenVerify.Approved = true
 	} else {
 		tokenVerify.Approved = false
 	}
 	return tokenVerify, nil
+}
+
+func (us *UserDomainSvc) RegisterUser(userInfo *do.UserBaseInfo, plainPassword string) (*do.UserBaseInfo, error) {
+	// 确定登录名可用
+	existedUser, err := us.userDao.FindUserByLoginNam(userInfo.LoginName)
+	if err != nil {
+		return nil, errcode.Wrap("UserDomainSvcRegisterUserError", err)
+	}
+	if existedUser.LoginName != "" { // 用户名已经被占用
+		return nil, errcode.ErrUserNameOccupied
+	}
+	passwordHash, err := util.BcryptPassword(plainPassword)
+	if err != nil {
+		err = errcode.Wrap("UserDomainSvcRegisterUserError", err)
+		return nil, err
+	}
+	userModel, err := us.userDao.CreateUser(userInfo, passwordHash)
+	if err != nil {
+		err = errcode.Wrap("UserDomainSvcRegisterUserError", err)
+		return nil, err
+	}
+	err = util.CopyProperties(userInfo, userModel)
+	if err != nil {
+		err = errcode.Wrap("UserDomainSvcRegisterUserError", err)
+		return nil, err
+	}
+
+	return userInfo, nil
+}
+
+func (us *UserDomainSvc) LoginUser(LoginName, plainPassword, platform string) (*do.TokenInfo, error) {
+	existedUser, err := us.userDao.FindUserByLoginNam(LoginName)
+	if err != nil {
+		return nil, errcode.Wrap("UserDomainSvcLoginUserError", err)
+	}
+	if existedUser.ID == 0 {
+		return nil, errcode.ErrUserNotRight
+	}
+	if !util.BcryptCompare(existedUser.Password, plainPassword) {
+		return nil, errcode.ErrUserNotRight
+	}
+	// 生成Token 和 Session
+	tokenInfo, err := us.GenAuthToken(existedUser.ID, platform, "")
+	return tokenInfo, err
+}
+
+func (us *UserDomainSvc) LogoutUser(userId int64, platform string) error {
+	log := logger.New(us.ctx)
+	userSession, err := cache.GetUserPlatformSession(us.ctx, userId, platform)
+	if err != nil {
+		log.Error("LogoutUserError", "err", err)
+		return errcode.Wrap("UserDomainSvcLogoutUserError", err)
+	}
+	// 删掉用户当前会话中的AccessToken和RefreshToken
+	err = cache.DelAccessToken(us.ctx, userSession.AccessToken)
+	if err != nil {
+		log.Error("LogoutUserError", "err", err)
+		return errcode.Wrap("UserDomainSvcLogoutUserError", err)
+	}
+	err = cache.DelRefreshToken(us.ctx, userSession.RefreshToken)
+	if err != nil {
+		log.Error("LogoutUserError", "err", err)
+		return errcode.Wrap("UserDomainSvcLogoutUserError", err)
+	}
+	// 删掉用户在对应平台上的Session
+	err = cache.DelUserSessionOnPlatform(us.ctx, userId, platform)
+	if err != nil {
+		log.Error("LogoutUserError", "err", err)
+		return errcode.Wrap("UserDomainSvcLogoutUserError", err)
+	}
+
+	return nil
 }
