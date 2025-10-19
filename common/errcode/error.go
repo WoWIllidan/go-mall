@@ -54,9 +54,32 @@ func (e *AppError) Msg() string {
 // 如果业务模块预定义的错误码比较详细, 可以使用这个方法, 反之错误码定义的比较笼统建议使用Wrap方法包装底层错误生成项目自定义Error
 // 并将其记录到日志后再使用预定义错误码返回接口响应
 func (e *AppError) WithCause(err error) *AppError {
-	e.cause = err
-	e.occurred = getAppErrOccurredInfo()
-	return e
+	newErr := e.Clone()
+	newErr.cause = err
+	newErr.occurred = getAppErrOccurredInfo()
+	return newErr
+}
+
+func (e *AppError) UnWrap() error {
+	return e.cause
+}
+
+// Is 与上面的UnWrap一起让 *AppError 支持 errors.Is(err, target)
+func (e *AppError) Is(target error) bool {
+	targetErr, ok := target.(*AppError)
+	if !ok {
+		return false
+	}
+	return targetErr.Code() == e.Code()
+}
+
+func (e *AppError) Clone() *AppError {
+	return &AppError{
+		code:     e.code,
+		msg:      e.msg,
+		cause:    e.cause,
+		occurred: e.occurred,
+	}
 }
 
 func newError(code int, msg string) *AppError {

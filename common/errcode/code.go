@@ -14,6 +14,7 @@ var (
 	ErrToken           = newError(10000004, "Token无效")
 	ErrForbidden       = newError(10000005, "未授权") // 访问一些未授权的资源时的错误
 	ErrTooManyRequests = newError(10000006, "请求过多")
+	ErrUserInvalid     = newError(10000007, "用户异常")
 )
 
 // 各个业务模块自定义的错误码, 从 10000100 开始, 可以按照不同的业务模块划分不同的号段
@@ -28,7 +29,7 @@ func (e *AppError) HttpStatusCode() int {
 		return http.StatusOK
 	case ErrServer.Code(), ErrPanic.Code():
 		return http.StatusInternalServerError
-	case ErrParams.Code():
+	case ErrParams.Code(), ErrUserInvalid.Code():
 		return http.StatusBadRequest
 	case ErrNotFound.Code():
 		return http.StatusNotFound

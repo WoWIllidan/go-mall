@@ -2,6 +2,7 @@ package router
 
 import (
 	"github.com/WoWBytePaladin/go-mall/api/controller"
+	"github.com/WoWBytePaladin/go-mall/common/middleware"
 	"github.com/gin-gonic/gin"
 )
 
@@ -30,4 +31,15 @@ func registerBuildingRoutes(rg *gin.RouterGroup) {
 	g.GET("response-error", controller.TestResponseError)
 	// 测试GORM Loggeer
 	g.GET("gorm-logger-test", controller.TestGormLogger)
+	// 演示代码逻辑分层, 测试 Create Demo Order
+	g.POST("create-demo-order", controller.TestCreateDemoOrder)
+	// 测试封装的httptool
+	g.GET("httptool-get-test", controller.TestForHttpToolGet)
+	g.GET("httptool-post-test", controller.TestForHttpToolPost)
+	// 测试Token生成 - 后面有登录功能后会删掉, token在登录时生成
+	g.GET("token-make-test", controller.TestMakeToken)
+	// 测试刷新Token
+	g.GET("token-refresh-test", controller.TestRefreshToken)
+	// 测试Token认证中间件
+	g.GET("token-auth-test", middleware.AuthUser(), controller.TestAuthToken)
 }
