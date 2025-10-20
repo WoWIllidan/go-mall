@@ -123,3 +123,73 @@ func (us *UserAppSvc) UserInfo(userId int64) *reply.UserInfoReply {
 func (us *UserAppSvc) UserInfoUpdate(request *request.UserInfoUpdate, userId int64) error {
 	return us.userDomainSvc.UpdateUserBaseInfo(request, userId)
 }
+
+// AddUserAddress 新增用户收货地址
+func (us *UserAppSvc) AddUserAddress(request *request.UserAddress, userId int64) error {
+	userAddressInfo := new(do.UserAddressInfo)
+	err := util.CopyProperties(userAddressInfo, request)
+	if err != nil {
+		return errcode.Wrap("请求转换成领域对象失败", err)
+	}
+	userAddressInfo.UserId = userId
+	newUserAddress, err := us.userDomainSvc.AddUserAddress(userAddressInfo)
+	if err != nil {
+		logger.New(us.ctx).Error("添加用户收货地址失败", "err", err, "return data", newUserAddress)
+	}
+	return err
+}
+
+// GetUserAddresses 查询用户所有收货地址信息
+func (us *UserAppSvc) GetUserAddresses(userId int64) ([]*reply.UserAddress, error) {
+	userAddresses := make([]*reply.UserAddress, 0)
+	addresses, err := us.userDomainSvc.GetUserAddresses(userId)
+	if err != nil {
+		return nil, err
+	}
+	if len(addresses) == 0 { // 没有数据, 返回userAddressesReply 而不是nil, 避免格式化时data字段值为null
+		return userAddresses, nil
+	}
+	err = util.CopyProperties(&userAddresses, &addresses)
+	if err != nil {
+		errcode.Wrap("GetUserAddresses转换响应数据时发生错误", err)
+		return nil, err
+	}
+	for _, address := range userAddresses {
+		// 用户姓名和手机号脱敏
+		address.MaskedUserName = util.MaskRealName(address.UserName)
+		address.MaskedUserPhone = util.MaskPhone(address.UserPhone)
+	}
+	return userAddresses, nil
+}
+
+// GetUserSingleAddress 获取单个地址信息
+func (us *UserAppSvc) GetUserSingleAddress(userId, addressId int64) (*reply.UserAddress, error) {
+	addressInfo, err := us.userDomainSvc.GetUserSingleAddress(userId, addressId)
+	if err != nil {
+		return nil, err
+	}
+	userAddress := new(reply.UserAddress)
+	util.CopyProperties(userAddress, addressInfo)
+	userAddress.MaskedUserName = util.MaskRealName(userAddress.UserName)
+	userAddress.MaskedUserPhone = util.MaskPhone(userAddress.UserPhone)
+
+	return userAddress, nil
+}
+
+// ModifyUserAddress 更新用户的某个收货地址信息
+func (us *UserAppSvc) ModifyUserAddress(requestData *request.UserAddress, userId, addressId int64) error {
+	userAddressInfo := new(do.UserAddressInfo)
+	err := util.CopyProperties(userAddressInfo, requestData)
+	if err != nil {
+		return errcode.Wrap("请求转换成领域对象失败", err)
+	}
+	userAddressInfo.UserId = userId
+	userAddressInfo.ID = addressId
+	err = us.userDomainSvc.ModifyUserAddress(userAddressInfo)
+	return err
+}
+
+// DeleteOneUserAddress 删除地址
+func (us *UserAppSvc) DeleteOneUserAddress(userId, addressId int64) error {
+	return us.userDomainSvc.DeleteOneUserAddress(userId, addressId)
+}

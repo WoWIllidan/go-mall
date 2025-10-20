@@ -37,3 +37,18 @@ type TokenVerify struct {
 	Platform  string // 用户Token对应的登录平台
 	SessionId string // SessionId 可以用于存储一些与登录相关的东西, 用户不重新登录不会变
 }
+
+type UserAddressInfo struct {
+	ID            int64
+	UserId        int64
+	UserName      string
+	UserPhone     string
+	Default       int
+	ProvinceName  string
+	CityName      string
+	RegionName    string
+	DetailAddress string
+	IsDel         int
+	CreatedAt     time.Time
+	UpdatedAt     time.Time
+}

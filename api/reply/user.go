@@ -22,3 +22,17 @@ type UserInfoReply struct {
 type PasswordResetApply struct {
 	PasswordResetToken string `json:"password_reset_token"`
 }
+
+type UserAddress struct {
+	ID              int64  `json:"id"`
+	UserName        string `json:"user_name"`
+	UserPhone       string `json:"user_phone"`
+	MaskedUserName  string `json:"masked_user_name"`  // 用于前台展示的脱敏后的用户姓名
+	MaskedUserPhone string `json:"masked_user_phone"` // 用于前台展示的脱敏后的用户手机号
+	Default         int    `json:"default"`
+	ProvinceName    string `json:"province_name"`
+	CityName        string `json:"city_name"`
+	RegionName      string `json:"region_name"`
+	DetailAddress   string `json:"detail_address"`
+	CreatedAt       string `json:"created_at"`
+}

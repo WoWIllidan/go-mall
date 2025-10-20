@@ -26,7 +26,7 @@ func NewUserDomainSvc(ctx context.Context) *UserDomainSvc {
 	}
 }
 
-// GetUserBaseInfo 因为还没开发注册登录功能, 这里先Mock一个返回
+// GetUserBaseInfo UID查询用户信息
 func (us *UserDomainSvc) GetUserBaseInfo(userId int64) *do.UserBaseInfo {
 	user, err := us.userDao.FindUserById(userId)
 	log := logger.New(us.ctx)
@@ -277,9 +277,6 @@ func (us *UserDomainSvc) ApplyForPasswordReset(loginName string) (passwordResetT
 		err = errcode.Wrap("ApplyForPasswordResetError", err)
 		return
 	}
-	// TODO 把验证码通过邮件/短信发送给用户, 练习中就不实际去发送了。
-
-	// 发送成功后返回Token
 	passwordResetToken = token
 	return
 }
@@ -325,4 +322,79 @@ func (us *UserDomainSvc) ResetPassword(resetToken, resetCode, newPlainPassword s
 		log.Error("ResetPasswordError", "err", err)
 	}
 	return nil
+}
+
+// AddUserAddress 新增用户收货地址
+func (us *UserDomainSvc) AddUserAddress(addressInfo *do.UserAddressInfo) (*do.UserAddressInfo, error) {
+	addressModel, err := us.userDao.CreateUserAddress(addressInfo)
+	if err != nil {
+		err = errcode.Wrap("AddUserAddressError", err)
+		return nil, err
+	}
+	err = util.CopyProperties(addressInfo, addressModel)
+	if err != nil {
+		err = errcode.Wrap("AddUserAddressError", err)
+		return nil, err
+	}
+	return addressInfo, nil
+}
+
+// GetUserAddresses 查询用户收货信息列表
+func (us *UserDomainSvc) GetUserAddresses(userId int64) ([]*do.UserAddressInfo, error) {
+	addresses, err := us.userDao.FindUserAddresses(userId)
+	if err != nil {
+		err = errcode.Wrap("GetUserAddressesError", err)
+		return nil, err
+	}
+	userAddresses := make([]*do.UserAddressInfo, 0)
+	if len(addresses) == 0 {
+		return userAddresses, nil
+	}
+	err = util.CopyProperties(&userAddresses, &addresses)
+	if err != nil {
+		err = errcode.Wrap("AddUserAddressError", err)
+		return nil, err
+	}
+	return userAddresses, nil
+}
+
+// GetUserSingleAddress 获取单个地址信息
+func (us *UserDomainSvc) GetUserSingleAddress(userId, addressId int64) (*do.UserAddressInfo, error) {
+	address, err := us.userDao.GetSingleAddress(addressId)
+	if err != nil || address.UserId != userId {
+		logger.New(us.ctx).Error("UserAddressNotMatchError", "err", err, "return data", address, "addressId", addressId, "userId", userId)
+		return nil, errcode.ErrParams
+	}
+	userAddress := new(do.UserAddressInfo)
+	err = util.CopyProperties(userAddress, address)
+	if err != nil {
+		return nil, errcode.Wrap("GetUserSingleAddressError", err)
+	}
+	return userAddress, nil
+}
+
+// ModifyUserAddress 更改用户的地址信息
+func (us *UserDomainSvc) ModifyUserAddress(address *do.UserAddressInfo) error {
+	addressModel, err := us.userDao.GetSingleAddress(address.ID)
+	log := logger.New(us.ctx)
+	if err != nil || address.UserId != addressModel.UserId {
+		// 不匹配, 这种打一条日志, 监控系统按日志里的关键字做一下监控, 好发现问题
+		log.Error("UserAddressNotMatchError", "err", err, "return data", address, "request data", address)
+		return errcode.ErrParams
+	}
+	err = us.userDao.UpdateUserAddress(address)
+	if err != nil {
+		err = errcode.Wrap("UpdateUserAddressError", err)
+	}
+	return err
+}
+
+func (us *UserDomainSvc) DeleteOneUserAddress(userId, addressId int64) error {
+	address, err := us.userDao.GetSingleAddress(addressId)
+	if err != nil || address.UserId != userId {
+		logger.New(us.ctx).Error("UserAddressNotMatchError", "err", err, "return data", address, "addressId", addressId, "userId", userId)
+		return errcode.ErrParams
+	}
+	err = us.userDao.DeleteOneAddress(address)
+	return err
 }

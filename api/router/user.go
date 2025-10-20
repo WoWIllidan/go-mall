@@ -27,4 +27,14 @@ func registerUserRoutes(rg *gin.RouterGroup) {
 	g.GET("info", middleware.AuthUser(), controller.UserInfo)
 	// 更新用户基本信息
 	g.PATCH("info", middleware.AuthUser(), controller.UpdateUserInfo)
+	// 新增用户收货地址信息
+	g.POST("address", middleware.AuthUser(), controller.AddUserAddress)
+	// 查询用户所有的收货地址信息
+	g.GET("address/", middleware.AuthUser(), controller.GetUserAddresses)
+	// 查询用户单个收货地址信息
+	g.GET("address/:address_id", middleware.AuthUser(), controller.GetUserAddress)
+	// 修改用户的地址
+	g.PATCH("address/:address_id", middleware.AuthUser(), controller.UpdateUserAddress)
+	// 删除用户的单条地址信息
+	g.DELETE("address/:address_id", middleware.AuthUser(), controller.DeleteUserAddress)
 }

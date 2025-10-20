@@ -37,3 +37,13 @@ type PasswordReset struct {
 	Token           string `json:"password_reset_token" binding:"required"`
 	Code            string `json:"password_reset_code" binding:"required"`
 }
+
+type UserAddress struct {
+	UserName      string `json:"user_name" binding:"required"`
+	UserPhone     string `json:"user_phone" binding:"required"`
+	Default       int    `json:"default" binding:"oneof=0 1"`
+	ProvinceName  string `json:"province_name" binding:"required"`
+	CityName      string `json:"city_name" binding:"required"`
+	RegionName    string `json:"region_name" binding:"required"`
+	DetailAddress string `json:"detail_address" binding:"required"`
+}

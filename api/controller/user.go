@@ -2,7 +2,6 @@ package controller
 
 import (
 	"errors"
-
 	"github.com/WoWBytePaladin/go-mall/api/request"
 	"github.com/WoWBytePaladin/go-mall/common/app"
 	"github.com/WoWBytePaladin/go-mall/common/errcode"
@@ -10,6 +9,7 @@ import (
 	"github.com/WoWBytePaladin/go-mall/common/util"
 	"github.com/WoWBytePaladin/go-mall/logic/appservice"
 	"github.com/gin-gonic/gin"
+	"strconv"
 )
 
 func RefreshUserToken(c *gin.Context) {
@@ -177,5 +177,101 @@ func UpdateUserInfo(c *gin.Context) {
 		return
 	}
 
+	app.NewResponse(c).SuccessOk()
+}
+
+// AddUserAddress 新增收货地址
+func AddUserAddress(c *gin.Context) {
+	request := new(request.UserAddress)
+	if err := c.ShouldBindJSON(request); err != nil {
+		app.NewResponse(c).Error(errcode.ErrParams.WithCause(err))
+		return
+	}
+	userSvc := appservice.NewUserAppSvc(c)
+	err := userSvc.AddUserAddress(request, c.GetInt64("userId"))
+	if err != nil {
+		app.NewResponse(c).Error(errcode.ErrServer.WithCause(err))
+		return
+	}
+
+	app.NewResponse(c).SuccessOk()
+}
+
+// GetUserAddresses 获取用户的收货信息列表
+func GetUserAddresses(c *gin.Context) {
+	userSvc := appservice.NewUserAppSvc(c)
+	replyData, err := userSvc.GetUserAddresses(c.GetInt64("userId"))
+	if err != nil {
+		app.NewResponse(c).Error(errcode.ErrServer.WithCause(err))
+		return
+	}
+	app.NewResponse(c).Success(replyData)
+}
+
+// GetUserAddress 获取用户单个收货信息
+func GetUserAddress(c *gin.Context) {
+	addressId, _ := strconv.ParseInt(c.Param("address_id"), 10, 64)
+	if addressId <= 0 {
+		app.NewResponse(c).Error(errcode.ErrParams)
+		return
+	}
+	userSvc := appservice.NewUserAppSvc(c)
+	replyData, err := userSvc.GetUserSingleAddress(c.GetInt64("userId"), addressId)
+	if err != nil {
+		if errors.Is(err, errcode.ErrParams) {
+			app.NewResponse(c).Error(errcode.ErrParams)
+		} else {
+			app.NewResponse(c).Error(errcode.ErrServer)
+		}
+		return
+	}
+	app.NewResponse(c).Success(replyData)
+}
+
+// UpdateUserAddress 修改用户地址信息
+func UpdateUserAddress(c *gin.Context) {
+	// 验证URL中的参数
+	addressId, _ := strconv.ParseInt(c.Param("address_id"), 10, 64)
+	if addressId <= 0 {
+		app.NewResponse(c).Error(errcode.ErrParams)
+		return
+	}
+	// 验证请求Body中的参数
+	requestData := new(request.UserAddress)
+	if err := c.ShouldBindJSON(requestData); err != nil {
+		app.NewResponse(c).Error(errcode.ErrParams.WithCause(err))
+		return
+	}
+	userSvc := appservice.NewUserAppSvc(c)
+	err := userSvc.ModifyUserAddress(requestData, c.GetInt64("userId"), addressId)
+	if err != nil {
+		if errors.Is(err, errcode.ErrParams) {
+			app.NewResponse(c).Error(errcode.ErrParams)
+		} else {
+			app.NewResponse(c).Error(errcode.ErrServer)
+		}
+		return
+	}
+	app.NewResponse(c).SuccessOk()
+}
+
+// DeleteUserAddress 删除用户地址信息
+func DeleteUserAddress(c *gin.Context) {
+	// 验证URL中的参数
+	addressId, _ := strconv.ParseInt(c.Param("address_id"), 10, 64)
+	if addressId <= 0 {
+		app.NewResponse(c).Error(errcode.ErrParams)
+		return
+	}
+	userSvc := appservice.NewUserAppSvc(c)
+	err := userSvc.DeleteOneUserAddress(c.GetInt64("userId"), addressId)
+	if err != nil {
+		if errors.Is(err, errcode.ErrParams) {
+			app.NewResponse(c).Error(errcode.ErrParams)
+		} else {
+			app.NewResponse(c).Error(errcode.ErrServer)
+		}
+		return
+	}
 	app.NewResponse(c).SuccessOk()
 }
