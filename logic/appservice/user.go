@@ -105,3 +105,21 @@ func (us *UserAppSvc) PasswordResetApply(request *request.PasswordResetApply) (*
 func (us *UserAppSvc) PasswordReset(request *request.PasswordReset) error {
 	return us.userDomainSvc.ResetPassword(request.Token, request.Code, request.Password)
 }
+
+// UserInfo 用户信息
+func (us *UserAppSvc) UserInfo(userId int64) *reply.UserInfoReply {
+	userInfo := us.userDomainSvc.GetUserBaseInfo(userId)
+	if userInfo == nil || userInfo.ID == 0 {
+		return nil
+	}
+	infoReply := new(reply.UserInfoReply)
+	util.CopyProperties(infoReply, userInfo)
+	// 登录名是敏感信息, 做混淆处理
+	infoReply.LoginName = util.MaskLoginName(infoReply.LoginName)
+	return infoReply
+}
+
+// UserInfoUpdate 更新用户昵称、签名等信息
+func (us *UserAppSvc) UserInfoUpdate(request *request.UserInfoUpdate, userId int64) error {
+	return us.userDomainSvc.UpdateUserBaseInfo(request, userId)
+}

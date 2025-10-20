@@ -23,4 +23,8 @@ func registerUserRoutes(rg *gin.RouterGroup) {
 	g.POST("password/apply-reset", controller.PasswordResetApply)
 	// 重置密码
 	g.POST("password/reset", controller.PasswordReset)
+	// 用户基本信息
+	g.GET("info", middleware.AuthUser(), controller.UserInfo)
+	// 更新用户基本信息
+	g.PATCH("info", middleware.AuthUser(), controller.UpdateUserInfo)
 }
