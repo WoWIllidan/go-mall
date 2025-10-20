@@ -19,4 +19,8 @@ func registerUserRoutes(rg *gin.RouterGroup) {
 	g.POST("login", controller.LoginUser)
 	// 登出用户
 	g.DELETE("logout", middleware.AuthUser(), controller.LogoutUser)
+	// 申请重置密码
+	g.POST("password/apply-reset", controller.PasswordResetApply)
+	// 重置密码
+	g.POST("password/reset", controller.PasswordReset)
 }

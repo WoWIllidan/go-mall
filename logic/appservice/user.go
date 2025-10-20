@@ -87,3 +87,21 @@ func (us *UserAppSvc) UserLogout(userId int64, platform string) error {
 	err := us.userDomainSvc.LogoutUser(userId, platform)
 	return err
 }
+
+// PasswordResetApply 申请重置密码
+func (us *UserAppSvc) PasswordResetApply(request *request.PasswordResetApply) (*reply.PasswordResetApply, error) {
+	passwordResetToken, code, err := us.userDomainSvc.ApplyForPasswordReset(request.LoginName)
+	// TODO 把验证码通过邮件/短信发送给用户, 练习中就不实际去发送了, 记一条日志代替。
+	logger.New(us.ctx).Info("PasswordResetApply", "token", passwordResetToken, "code", code)
+	if err != nil {
+		return nil, err
+	}
+	reply := new(reply.PasswordResetApply)
+	reply.PasswordResetToken = passwordResetToken
+	return reply, nil
+}
+
+// PasswordReset 重置密码
+func (us *UserAppSvc) PasswordReset(request *request.PasswordReset) error {
+	return us.userDomainSvc.ResetPassword(request.Token, request.Code, request.Password)
+}

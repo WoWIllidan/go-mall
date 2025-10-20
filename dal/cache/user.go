@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/WoWBytePaladin/go-mall/common/enum"
@@ -121,6 +123,16 @@ func DelUserSessionOnPlatform(ctx context.Context, userId int64, platform string
 
 // DelUserSessions Delete user's sessions on all platform
 func DelUserSessions(ctx context.Context, userId int64) error {
+	// 先获取所有平台上的Session信息中
+	sessions, err := GetUserAllSessions(ctx, userId)
+	if err != nil {
+		return err
+	}
+	// 把所有Session中保存的正在用的Token都过期掉
+	for _, sessInfo := range sessions {
+		DelOldSessionTokens(ctx, sessInfo)
+	}
+	// Token过期完成后再删掉Session
 	redisKey := fmt.Sprintf(enum.REDIS_KEY_USER_SESSION, userId)
 	return Redis().Del(ctx, redisKey).Err()
 }
@@ -187,4 +199,37 @@ func GetAccessToken(ctx context.Context, accessToken string) (*do.SessionInfo, e
 	json.Unmarshal([]byte(result), &session)
 
 	return session, nil
+}
+
+// SetPasswordResetToken 设置重置密码的验证Token信息到缓存, 15分钟内有效
+// @param ctx
+// @param userId
+// @param token 重置密码的验证Token
+// @param code 验证码
+func SetPasswordResetToken(ctx context.Context, userId int64, token, code string) error {
+	redisKey := fmt.Sprintf(enum.REDISKEY_PASSWORDRESET_TOKEN, token)
+	val := fmt.Sprintf("%d:%s", userId, code) // val 以 userId:code 的字符串形式存储
+	return Redis().Set(ctx, redisKey, val, enum.PasswordTokenDuration).Err()
+}
+
+func GetPasswordResetToken(ctx context.Context, token string) (userId int64, code string, err error) {
+	redisKey := fmt.Sprintf(enum.REDISKEY_PASSWORDRESET_TOKEN, token)
+	val, redisErr := Redis().Get(ctx, redisKey).Result()
+	if redisErr != nil && redisErr != redis.Nil {
+		err = redisErr
+		return
+	}
+	valArr := strings.Split(val, ":")
+	if len(valArr) != 2 { // 密码重置Token无对应的缓存, 判定该参数不合法, 此处直接返回
+		return
+	}
+	userId, _ = strconv.ParseInt(valArr[0], 10, 64)
+	code = valArr[1]
+
+	return
+}
+
+func DelPasswordResetToken(ctx context.Context, token string) error {
+	redisKey := fmt.Sprintf(enum.REDISKEY_PASSWORDRESET_TOKEN, token)
+	return Redis().Del(ctx, redisKey).Err()
 }

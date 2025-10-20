@@ -2,7 +2,6 @@ package controller
 
 import (
 	"errors"
-
 	"github.com/WoWBytePaladin/go-mall/api/request"
 	"github.com/WoWBytePaladin/go-mall/common/app"
 	"github.com/WoWBytePaladin/go-mall/common/errcode"
@@ -99,5 +98,54 @@ func LogoutUser(c *gin.Context) {
 		app.NewResponse(c).Error(errcode.ErrServer.WithCause(err))
 		return
 	}
+	app.NewResponse(c).SuccessOk()
+}
+
+// PasswordResetApply 申请重置密码
+func PasswordResetApply(c *gin.Context) {
+	request := new(request.PasswordResetApply)
+	if err := c.ShouldBindJSON(request); err != nil {
+		app.NewResponse(c).Error(errcode.ErrParams.WithCause(err))
+		return
+	}
+	userSvc := appservice.NewUserAppSvc(c)
+	reply, err := userSvc.PasswordResetApply(request)
+	if err != nil {
+		if errors.Is(err, errcode.ErrUserNotRight) {
+			app.NewResponse(c).Error(errcode.ErrUserNotRight)
+		} else {
+			app.NewResponse(c).Error(errcode.ErrServer.WithCause(err))
+		}
+		return
+	}
+
+	app.NewResponse(c).Success(reply)
+}
+
+func PasswordReset(c *gin.Context) {
+	request := new(request.PasswordReset)
+	if err := c.ShouldBindJSON(request); err != nil {
+		app.NewResponse(c).Error(errcode.ErrParams.WithCause(err))
+		return
+	}
+	if !util.PasswordComplexityVerify(request.Password) {
+		// Validator验证通过后再应用 密码复杂度这样的特殊验证
+		logger.New(c).Warn("RegisterUserError", "err", "密码复杂度不满足", "password", request.Password)
+		app.NewResponse(c).Error(errcode.ErrParams)
+		return
+	}
+	userSvc := appservice.NewUserAppSvc(c)
+	err := userSvc.PasswordReset(request)
+	if err != nil {
+		if errors.Is(err, errcode.ErrParams) {
+			app.NewResponse(c).Error(errcode.ErrParams)
+		} else if errors.Is(err, errcode.ErrUserInvalid) {
+			app.NewResponse(c).Error(errcode.ErrUserInvalid)
+		} else {
+			app.NewResponse(c).Error(errcode.ErrServer)
+		}
+		return
+	}
+
 	app.NewResponse(c).SuccessOk()
 }

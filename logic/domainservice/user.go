@@ -191,8 +191,8 @@ func (us *UserDomainSvc) RegisterUser(userInfo *do.UserBaseInfo, plainPassword s
 	return userInfo, nil
 }
 
-func (us *UserDomainSvc) LoginUser(LoginName, plainPassword, platform string) (*do.TokenInfo, error) {
-	existedUser, err := us.userDao.FindUserByLoginNam(LoginName)
+func (us *UserDomainSvc) LoginUser(loginName, plainPassword, platform string) (*do.TokenInfo, error) {
+	existedUser, err := us.userDao.FindUserByLoginNam(loginName)
 	if err != nil {
 		return nil, errcode.Wrap("UserDomainSvcLoginUserError", err)
 	}
@@ -232,5 +232,80 @@ func (us *UserDomainSvc) LogoutUser(userId int64, platform string) error {
 		return errcode.Wrap("UserDomainSvcLogoutUserError", err)
 	}
 
+	return nil
+}
+
+// ApplyForPasswordReset 申请重置密码
+// @return passwordResetToken 重置密码时需要携带的Token信息，用于安全验证
+// @return err 错误返回
+func (us *UserDomainSvc) ApplyForPasswordReset(loginName string) (passwordResetToken, code string, err error) {
+	user, err := us.userDao.FindUserByLoginNam(loginName)
+	if err != nil {
+		err = errcode.Wrap("ApplyForPasswordResetError", err)
+		return
+	}
+	if user.ID == 0 {
+		err = errcode.ErrUserNotRight
+		return
+	}
+	token, err := util.GenPasswordResetToken(user.ID)
+	code = util.RandNumStr(6)
+	if err != nil {
+		err = errcode.Wrap("ApplyForPasswordResetError", err)
+		return
+	}
+	// 把token和验证码存入缓存
+	err = cache.SetPasswordResetToken(us.ctx, user.ID, token, code)
+	if err != nil {
+		err = errcode.Wrap("ApplyForPasswordResetError", err)
+		return
+	}
+	// TODO 把验证码通过邮件/短信发送给用户, 练习中就不实际去发送了。
+
+	// 发送成功后返回Token
+	passwordResetToken = token
+	return
+}
+
+func (us *UserDomainSvc) ResetPassword(resetToken, resetCode, newPlainPassword string) error {
+	log := logger.New(us.ctx)
+	userId, code, err := cache.GetPasswordResetToken(us.ctx, resetToken)
+	if err != nil {
+		log.Error("ResetPasswordError", "err", err)
+		err = errcode.Wrap("ResetPasswordError", err)
+		return err
+	}
+	// 确认Token正确且code码正确
+	if userId == 0 || resetCode != code {
+		return errcode.ErrParams
+	}
+	user, err := us.userDao.FindUserById(userId)
+	if err != nil {
+		return errcode.Wrap("ResetPasswordError", err)
+	}
+	// 找不到用户或者用户为封禁状态
+	if user.ID == 0 || user.IsBlocked == enum.UserBlockStateBlocked {
+		return errcode.ErrUserInvalid
+	}
+	newPass, err := util.BcryptPassword(newPlainPassword)
+	if err != nil {
+		return errcode.Wrap("ResetPasswordError", err)
+	}
+	// 更新密码
+	user.Password = newPass
+	err = us.userDao.UpdateUser(user)
+	if err != nil {
+		return errcode.Wrap("ResetPasswordError", err)
+	}
+	// 删掉用户所有已存的Session
+	err = cache.DelUserSessions(us.ctx, userId)
+	if err != nil {
+		log.Error("ResetPasswordError", "err", err)
+	}
+	err = cache.DelPasswordResetToken(us.ctx, resetToken)
+	if err != nil {
+		// 删缓存失败, 不给客户端错误消息, 记日志发告警
+		log.Error("ResetPasswordError", "err", err)
+	}
 	return nil
 }

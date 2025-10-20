@@ -33,7 +33,7 @@ type databaseConfig struct {
 
 type DbConnectOption struct {
 	DSN         string        `mapstructure:"dsn"`
-	MaxOpenConn int           `mapstructure:"maxopen""`
+	MaxOpenConn int           `mapstructure:"maxopen"`
 	MaxIdleConn int           `mapstructure:"maxidle"`
 	MaxLifeTime time.Duration `mapstructure:"maxlifetime"`
 }

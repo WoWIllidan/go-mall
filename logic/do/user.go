@@ -34,5 +34,6 @@ type UserBaseInfo struct {
 type TokenVerify struct {
 	Approved  bool   // 验证结果
 	UserId    int64  // 用户ID
+	Platform  string // 用户Token对应的登录平台
 	SessionId string // SessionId 可以用于存储一些与登录相关的东西, 用户不重新登录不会变
 }
