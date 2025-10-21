@@ -30,13 +30,26 @@ var (
 	ErrUserNotRight     = newError(10000103, "用户名或密码不正确")
 )
 
+// 商品模块相关错误码 10000200 ~ 1000299
+var (
+	ErrCommodityNotExists = newError(10000200, "商品不存在")
+	ErrCommodityStockOut  = newError(10000201, "库存不足")
+)
+
+// 购物车模块相关错误码 10000300 ～ 1000399
+var (
+	ErrCartItemParam = newError(10000300, "购物项参数异常")
+	ErrCartWrongUser = newError(10000301, "用户购物信息不匹配")
+)
+
 func (e *AppError) HttpStatusCode() int {
 	switch e.Code() {
 	case Success.Code():
 		return http.StatusOK
 	case ErrServer.Code(), ErrPanic.Code():
 		return http.StatusInternalServerError
-	case ErrParams.Code(), ErrUserInvalid.Code(), ErrUserNameOccupied.Code(), ErrUserNotRight.Code():
+	case ErrParams.Code(), ErrUserInvalid.Code(), ErrUserNameOccupied.Code(), ErrUserNotRight.Code(),
+		ErrCommodityNotExists.Code(), ErrCommodityStockOut.Code(), ErrCartItemParam.Code():
 		return http.StatusBadRequest
 	case ErrNotFound.Code():
 		return http.StatusNotFound
@@ -44,7 +57,7 @@ func (e *AppError) HttpStatusCode() int {
 		return http.StatusTooManyRequests
 	case ErrToken.Code():
 		return http.StatusUnauthorized
-	case ErrForbidden.Code():
+	case ErrForbidden.Code(), ErrCartWrongUser.Code():
 		return http.StatusForbidden
 	default:
 		return http.StatusInternalServerError
