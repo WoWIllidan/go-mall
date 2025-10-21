@@ -2,14 +2,12 @@ package controller
 
 import (
 	"errors"
-
 	"github.com/WoWBytePaladin/go-mall/api/request"
 	"github.com/WoWBytePaladin/go-mall/common/app"
 	"github.com/WoWBytePaladin/go-mall/common/errcode"
 	"github.com/WoWBytePaladin/go-mall/logic/appservice"
 	"github.com/gin-gonic/gin"
 	"github.com/samber/lo"
-
 	"strconv"
 )
 
@@ -103,7 +101,7 @@ func CheckCartItemBill(c *gin.Context) {
 	})
 
 	cartAppSvc := appservice.NewCartAppSvc(c)
-	replyData, err := cartAppSvc.CheckCartItemBill(itemIds, c.GetInt64("userId"))
+	replyData, err := cartAppSvc.CheckCartItemBillV2(itemIds, c.GetInt64("userId"))
 	if err != nil {
 		if errors.Is(err, errcode.ErrCartItemParam) {
 			app.NewResponse(c).Error(errcode.ErrCartItemParam)
