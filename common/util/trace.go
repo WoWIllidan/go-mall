@@ -35,7 +35,7 @@ func GetTraceInfoFromCtx(ctx context.Context) (traceId, spanId, pSpanId string) 
 	if ctx.Value("spanid") != nil {
 		spanId = ctx.Value("spanid").(string)
 	}
-	if ctx.Value("psapnid") != nil {
+	if ctx.Value("pspanid") != nil {
 		pSpanId = ctx.Value("pspanid").(string)
 	}
 

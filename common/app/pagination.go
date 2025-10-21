@@ -7,13 +7,13 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type pagination struct {
+type Pagination struct {
 	Page      int `json:"page"`
 	PageSize  int `json:"page_size"`
 	TotalRows int `json:"total_rows"`
 }
 
-func NewPagination(c *gin.Context) *pagination {
+func NewPagination(c *gin.Context) *Pagination {
 	page, _ := strconv.Atoi(c.Query("page"))
 	if page <= 0 {
 		page = 1
@@ -26,21 +26,21 @@ func NewPagination(c *gin.Context) *pagination {
 		pageSize = config.App.Pagination.MaxSize
 	}
 
-	return &pagination{Page: page, PageSize: pageSize}
+	return &Pagination{Page: page, PageSize: pageSize}
 }
 
-func (p *pagination) GetPage() int {
+func (p *Pagination) GetPage() int {
 	return p.Page
 }
 
-func (p *pagination) GetPageSize() int {
+func (p *Pagination) GetPageSize() int {
 	return p.PageSize
 }
 
-func (p *pagination) SetTotalRows(total int) {
+func (p *Pagination) SetTotalRows(total int) {
 	p.TotalRows = total
 }
 
-func (p *pagination) Offset() int {
+func (p *Pagination) Offset() int {
 	return (p.Page - 1) * p.PageSize
 }

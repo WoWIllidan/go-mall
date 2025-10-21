@@ -40,4 +40,6 @@ func registerBuildingRoutes(rg *gin.RouterGroup) {
 	g.GET("token-auth-test", middleware.AuthUser(), controller.TestAuthToken)
 	// 初始化商品分类测试数据
 	g.GET("init-category-data", controller.InitCategoryTestData)
+	// 初始化商品测试数据
+	g.GET("init-commodity-data", controller.InitCommodityTestData)
 }

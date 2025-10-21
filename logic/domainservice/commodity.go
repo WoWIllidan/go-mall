@@ -4,9 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+
 	"sort"
 
+	"github.com/WoWBytePaladin/go-mall/common/app"
 	"github.com/WoWBytePaladin/go-mall/common/errcode"
+	"github.com/WoWBytePaladin/go-mall/common/logger"
 	"github.com/WoWBytePaladin/go-mall/common/util"
 	"github.com/WoWBytePaladin/go-mall/dal/dao"
 	"github.com/WoWBytePaladin/go-mall/logic/do"
@@ -109,4 +112,106 @@ func (cds *CommodityDomainSvc) GetSubCategories(parentId int64) ([]*do.Commodity
 	util.CopyProperties(&categories, &categoryModels)
 
 	return categories, nil
+}
+
+// GetCategoryInfo 获取分类ID对应的分类信息
+func (cds *CommodityDomainSvc) GetCategoryInfo(categoryId int64) *do.CommodityCategory {
+	categoryModel, err := cds.commodityDao.GetCategoryById(categoryId)
+	if err != nil {
+		logger.New(cds.ctx).Error("GetCategoryInfoError", err)
+		return nil
+	}
+
+	categoryInfo := new(do.CommodityCategory)
+	util.CopyProperties(&categoryInfo, &categoryModel)
+	return categoryInfo
+}
+
+// InitCommodityData 初始化商品数据
+func (cds *CommodityDomainSvc) InitCommodityData() error {
+	commodity, err := cds.commodityDao.GetOneCommodity()
+	if err != nil {
+		return errcode.Wrap("初始化商品错误", err)
+	}
+	if commodity.ID > 0 {
+		// 商品表里有数据, 打断流程, 避免重复初始化
+		return errcode.Wrap("重复初始化商品", errors.New("不能重复初始化商品"))
+	}
+
+	initDataFileReader, err := resources.LoadResourceFile("commodity_init_data.json")
+	if err != nil {
+		return errcode.Wrap("初始化商品错误", err)
+	}
+
+	commodityDos := make([]*do.Commodity, 0)
+	decoder := json.NewDecoder(initDataFileReader)
+	decoder.Decode(&commodityDos)
+	err = cds.commodityDao.InitCommodityData(commodityDos)
+	if err != nil {
+		return errcode.Wrap("初始化商品错误", err)
+	}
+
+	return nil
+}
+
+// GetCommodityListInCategory 获取分类下的商品列表
+func (cds *CommodityDomainSvc) GetCommodityListInCategory(categoryInfo *do.CommodityCategory, pagination *app.Pagination) ([]*do.Commodity, error) {
+	offset := pagination.Offset()
+	size := pagination.GetPageSize()
+
+	thirdLevelCategoryIds, err := cds.commodityDao.GetThirdLevelCategories(categoryInfo)
+	if err != nil {
+		return nil, errcode.Wrap("GetCommodityListInCategoryError", err)
+	}
+	commodityModelList, totalRows, err := cds.commodityDao.GetCommoditiesInCategory(thirdLevelCategoryIds, offset, size)
+	if err != nil {
+		return nil, errcode.Wrap("GetCommodityListInCategoryError", err)
+	}
+	pagination.SetTotalRows(int(totalRows))
+
+	commodityList := make([]*do.Commodity, 0, len(commodityModelList))
+	err = util.CopyProperties(&commodityList, &commodityModelList)
+	if err != nil {
+		return nil, errcode.ErrCoverData.WithCause(err)
+	}
+
+	return commodityList, nil
+}
+
+// SearchCommodity 商品搜索
+func (cds *CommodityDomainSvc) SearchCommodity(keyword string, pagination *app.Pagination) ([]*do.Commodity, error) {
+	offset := pagination.Offset()
+	size := pagination.GetPageSize()
+
+	commodityModelList, totalRows, err := cds.commodityDao.FindCommodityWithNameKeyword(keyword, offset, size)
+	if err != nil {
+		return nil, errcode.Wrap("SearchCommodityError", err)
+	}
+	pagination.SetTotalRows(int(totalRows))
+
+	commodityList := make([]*do.Commodity, 0, len(commodityModelList))
+	err = util.CopyProperties(&commodityList, &commodityModelList)
+	if err != nil {
+		return nil, errcode.ErrCoverData.WithCause(err)
+	}
+
+	return commodityList, nil
+}
+
+// GetCommodityInfo 获取商品详情
+func (cds *CommodityDomainSvc) GetCommodityInfo(commodityId int64) *do.Commodity {
+	commodityModel, err := cds.commodityDao.FindCommodityById(commodityId)
+	log := logger.New(cds.ctx)
+	if err != nil {
+		log.Error("GetCommodityInfoError", "err", err)
+		return nil
+	}
+
+	commodity := new(do.Commodity)
+	err = util.CopyProperties(commodity, commodityModel)
+	if err != nil {
+		log.Error(errcode.ErrCoverData.Error(), "err", err)
+		return nil
+	}
+	return commodity
 }

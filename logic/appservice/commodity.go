@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/WoWBytePaladin/go-mall/api/reply"
+	"github.com/WoWBytePaladin/go-mall/common/app"
 	"github.com/WoWBytePaladin/go-mall/common/errcode"
 	"github.com/WoWBytePaladin/go-mall/common/logger"
 	"github.com/WoWBytePaladin/go-mall/common/util"
@@ -57,4 +58,51 @@ func (cas *CommodityAppSvc) GetSubCategories(parentId int64) []*reply.CommodityC
 		return replyData
 	}
 	return replyData
+}
+
+// GetCategoryCommodityList 获取分类商品列表
+func (cas *CommodityAppSvc) GetCategoryCommodityList(categoryId int64, pagination *app.Pagination) ([]*reply.CommodityListElem, error) {
+	categoryInfo := cas.commodityDomainSvc.GetCategoryInfo(categoryId)
+	if categoryInfo == nil || categoryInfo.ID == 0 {
+		return nil, errcode.ErrParams
+	}
+	commodityList, err := cas.commodityDomainSvc.GetCommodityListInCategory(categoryInfo, pagination)
+	if err != nil {
+		return nil, err
+	}
+	replyCommodityList := make([]*reply.CommodityListElem, 0, len(commodityList))
+	err = util.CopyProperties(&replyCommodityList, &commodityList)
+	if err != nil {
+		// 包装成数据转换错误, 并设置错误原因
+		return nil, errcode.ErrCoverData.WithCause(err)
+	}
+
+	return replyCommodityList, nil
+}
+
+// SearchCommodity 商品搜索
+func (cas *CommodityAppSvc) SearchCommodity(keyword string, pagination *app.Pagination) ([]*reply.CommodityListElem, error) {
+	commodityList, err := cas.commodityDomainSvc.SearchCommodity(keyword, pagination)
+	if err != nil {
+		return nil, err
+	}
+	replyCommodityList := make([]*reply.CommodityListElem, 0, len(commodityList))
+	err = util.CopyProperties(&replyCommodityList, &commodityList)
+	if err != nil {
+		return nil, errcode.ErrCoverData.WithCause(err)
+	}
+
+	return replyCommodityList, nil
+}
+
+// CommodityInfo 商品详情
+func (cas *CommodityAppSvc) CommodityInfo(commodityId int64) *reply.Commodity {
+	commodityDO := cas.commodityDomainSvc.GetCommodityInfo(commodityId)
+	if commodityDO == nil || commodityDO.ID == 0 {
+		return nil
+	}
+
+	commodityInfo := new(reply.Commodity)
+	util.CopyProperties(commodityInfo, commodityDO)
+	return commodityInfo
 }

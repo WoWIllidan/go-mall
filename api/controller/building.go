@@ -183,3 +183,13 @@ func InitCategoryTestData(c *gin.Context) {
 	}
 	app.NewResponse(c).SuccessOk()
 }
+
+func InitCommodityTestData(c *gin.Context) {
+	svc := appservice.NewDemoAppSvc(c)
+	err := svc.InitCommodityData()
+	if err != nil {
+		app.NewResponse(c).Error(errcode.ErrServer.WithCause(err))
+		return
+	}
+	app.NewResponse(c).SuccessOk()
+}

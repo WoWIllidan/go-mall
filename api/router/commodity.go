@@ -12,4 +12,10 @@ func registerCommodityRoutes(rg *gin.RouterGroup) {
 	g.GET("category-hierarchy/", controller.GetCategoryHierarchy)
 	// 按ParentID 查询商品分类列表
 	g.GET("category/", controller.GetCategoriesWithParentId)
+	// 按分类查询商品列表
+	g.GET("commodity-in-cate/", controller.CommoditiesInCategory)
+	// 商品搜索
+	g.GET("search", controller.CommoditySearch)
+	// 商品详情
+	g.GET(":commodity_id/info", controller.CommodityInfo)
 }
