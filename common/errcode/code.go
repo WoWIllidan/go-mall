@@ -14,6 +14,7 @@ var (
 	ErrToken           = newError(10000004, "Token无效")
 	ErrForbidden       = newError(10000005, "未授权") // 访问一些未授权的资源时的错误
 	ErrTooManyRequests = newError(10000006, "请求过多")
+	ErrCoverData       = newError(10000007, "ConvertDataError") // 数据转换错误
 )
 
 // 各个业务模块自定义的错误码, 从 10000100 开始, 可以按照不同的业务模块划分不同的号段

@@ -25,9 +25,19 @@ func init() {
 	_DbSlave = initDB(config.Database.Slave)
 }
 
+func getDialector(t, dsn string) gorm.Dialector {
+	//switch t { 项目数据库需要加载多数据源时去掉注释
+	//case "postgres":
+	//	return postgres.Open(dsn)
+	//default:
+	//	return mysql.Open(dsn)
+	//}
+	return mysql.Open(dsn)
+}
+
 func initDB(option config.DbConnectOption) *gorm.DB {
 	db, err := gorm.Open(
-		mysql.Open(option.DSN),
+		getDialector(option.Type, option.DSN),
 		&gorm.Config{
 			Logger: NewGormLogger(),
 		},

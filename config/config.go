@@ -26,12 +26,12 @@ type appConfig struct {
 
 // 数据库配置
 type databaseConfig struct {
-	Type   string          `mapstructure:"type"`
 	Master DbConnectOption `mapstructure:"master"`
 	Slave  DbConnectOption `mapstructure:"slave"`
 }
 
 type DbConnectOption struct {
+	Type        string        `mapstructure:"type"`
 	DSN         string        `mapstructure:"dsn"`
 	MaxOpenConn int           `mapstructure:"maxopen"`
 	MaxIdleConn int           `mapstructure:"maxidle"`

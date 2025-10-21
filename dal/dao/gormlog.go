@@ -2,9 +2,11 @@ package dao
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/WoWBytePaladin/go-mall/common/logger"
+	"gorm.io/gorm"
 	gormLogger "gorm.io/gorm/logger"
 )
 
@@ -38,7 +40,7 @@ func (l *GormLogger) Trace(ctx context.Context, begin time.Time, fc func() (sql 
 	// 获取 SQL 语句和返回条数
 	sql, rows := fc()
 	// Gorm 错误时记录错误日志
-	if err != nil {
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		logger.New(ctx).Error("SQL ERROR", "sql", sql, "rows", rows, "dur(ms)", duration)
 	}
 	// 慢查询日志

@@ -80,3 +80,9 @@ func (das *DemoAppSvc) CreateDemoOrder(orderRequest *request.DemoOrderCreate) (*
 
 	return replyDemoOrder, err
 }
+
+func (das *DemoAppSvc) InitCommodityCategoryData() error {
+	cds := domainservice.NewCommodityDomainSvc(das.ctx)
+	err := cds.InitCategoryData()
+	return err
+}

@@ -2,8 +2,6 @@ package controller
 
 import (
 	"errors"
-	"net/http"
-
 	"github.com/WoWBytePaladin/go-mall/api/request"
 	"github.com/WoWBytePaladin/go-mall/common/app"
 	"github.com/WoWBytePaladin/go-mall/common/errcode"
@@ -12,6 +10,7 @@ import (
 	"github.com/WoWBytePaladin/go-mall/library"
 	"github.com/WoWBytePaladin/go-mall/logic/appservice"
 	"github.com/gin-gonic/gin"
+	"net/http"
 )
 
 // 存放一些项目搭建过程中验证效果用的接口Handler, 之前搭建过程中在main包中写的测试接口也挪到了这里
@@ -26,7 +25,7 @@ func TestPing(c *gin.Context) {
 func TestConfigRead(c *gin.Context) {
 	database := config.Database
 	c.JSON(http.StatusOK, gin.H{
-		"type":     database.Type,
+		"type":     database.Master.Type,
 		"max_life": database.Master.MaxLifeTime,
 	})
 	return
@@ -167,49 +166,20 @@ func TestForHttpToolPost(c *gin.Context) {
 	app.NewResponse(c).Success(orderReply)
 }
 
-func TestMakeToken(c *gin.Context) {
-	userSvc := appservice.NewUserAppSvc(c)
-	token, err := userSvc.GenToken()
-	if err != nil {
-		if errors.Is(err, errcode.ErrUserInvalid) {
-			logger.New(c).Error("invalid user is unable to generate token", err)
-			//app.NewResponse(c).Error(errcode.ErrUserInvalid.WithCause(err)) 第一版的AppError会导Error循环引用，现在已解决
-			app.NewResponse(c).Error(errcode.ErrUserInvalid)
-		} else {
-			appErr := err.(*errcode.AppError)
-			app.NewResponse(c).Error(appErr)
-		}
-		return
-	}
-	app.NewResponse(c).Success(token)
-}
-
-func TestRefreshToken(c *gin.Context) {
-	refreshToken := c.Query("refresh_token")
-	if refreshToken == "" {
-		app.NewResponse(c).Error(errcode.ErrParams)
-		return
-	}
-	userSvc := appservice.NewUserAppSvc(c)
-	token, err := userSvc.TokenRefresh(refreshToken)
-	if err != nil {
-		if errors.Is(err, errcode.ErrTooManyRequests) {
-			// 客户端有并发刷新token
-			app.NewResponse(c).Error(errcode.ErrTooManyRequests)
-			return
-		} else {
-			appErr := err.(*errcode.AppError)
-			app.NewResponse(c).Error(appErr)
-		}
-		return
-	}
-	app.NewResponse(c).Success(token)
-}
-
 func TestAuthToken(c *gin.Context) {
 	app.NewResponse(c).Success(gin.H{
 		"user_id":    c.GetInt64("userId"),
 		"session_id": c.GetString("sessionId"),
 	})
 	return
+}
+
+func InitCategoryTestData(c *gin.Context) {
+	svc := appservice.NewDemoAppSvc(c)
+	err := svc.InitCommodityCategoryData()
+	if err != nil {
+		app.NewResponse(c).Error(errcode.ErrServer.WithCause(err))
+		return
+	}
+	app.NewResponse(c).SuccessOk()
 }
