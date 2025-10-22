@@ -8,6 +8,12 @@ app:
   pagination:
     default_size: 20
     max_size: 100
+  wechat_pay:
+    appid: ""
+    mchid: ""
+    private_serial_no: "" # 证书序列号
+    aes_key: ""
+    notify_url: "" # 支付结果回调通知地址
 database:
   master:
     type: mysql

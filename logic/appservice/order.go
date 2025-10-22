@@ -91,3 +91,16 @@ func (oas *OrderAppSvc) GetOrderInfo(orderNo string, userId int64) (*reply.Order
 func (oas *OrderAppSvc) CancelOrder(orderNo string, userId int64) error {
 	return oas.orderDomainSvc.CancelUserOrder(orderNo, userId)
 }
+
+// OrderCreatePay 订单发起支付
+func (oas *OrderAppSvc) OrderCreatePay(payRequest *request.OrderPayCreate, userId int64) (replyData interface{}, err error) {
+	switch payRequest.PayType {
+	case enum.PayTypeWxPay: // 使用微信支付
+		payInfo, err := oas.orderDomainSvc.CreteOrderWxPay(payRequest.OrderNo, userId)
+		return payInfo, err
+	default:
+		err = errcode.ErrParams
+	}
+
+	return
+}

@@ -2,7 +2,6 @@ package controller
 
 import (
 	"errors"
-
 	"github.com/WoWBytePaladin/go-mall/api/request"
 	"github.com/WoWBytePaladin/go-mall/common/app"
 	"github.com/WoWBytePaladin/go-mall/common/errcode"
@@ -82,4 +81,25 @@ func OrderCancel(c *gin.Context) {
 	}
 
 	app.NewResponse(c).SuccessOk()
+}
+
+// CreateOrderPay 订单发起支付
+func CreateOrderPay(c *gin.Context) {
+	request := new(request.OrderPayCreate)
+	if err := c.ShouldBindJSON(request); err != nil {
+		app.NewResponse(c).Error(errcode.ErrParams.WithCause(err))
+		return
+	}
+	orderAppSvc := appservice.NewOrderAppSvc(c)
+	reply, err := orderAppSvc.OrderCreatePay(request, c.GetInt64("userId"))
+	if err != nil {
+		if errors.Is(err, errcode.ErrOrderParams) {
+			app.NewResponse(c).Error(errcode.ErrOrderParams)
+		} else {
+			app.NewResponse(c).Error(errcode.ErrServer.WithCause(err))
+		}
+		return
+	}
+
+	app.NewResponse(c).Success(reply)
 }

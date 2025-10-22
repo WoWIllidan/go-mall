@@ -22,6 +22,13 @@ type appConfig struct {
 		DefaultSize int `mapstructure:"default_size"`
 		MaxSize     int `mapstructure:"max_size"`
 	}
+	WechatPay struct {
+		AppId           string `mapstructure:"appid"`
+		MchId           string `mapstructure:"mchid"`
+		PrivateSerialNo string `mapstructure:"private_serial_no"`
+		AesKey          string `mapstructur:"aes_key""`
+		NotifyUrl       string `mapstructur:"notify_url"`
+	}
 }
 
 // 数据库配置

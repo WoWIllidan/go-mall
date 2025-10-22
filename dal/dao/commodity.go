@@ -105,9 +105,9 @@ func (cd *CommodityDao) GetThirdLevelCategories(categoryInfo *do.CommodityCatego
 func (cd *CommodityDao) GetCommoditiesInCategory(categoryIds []int64, offset, returnSize int) (commodityList []*model.Commodity, totalRows int64, err error) {
 	// 查询满足条件的商品
 	err = DB().WithContext(cd.ctx).Omit("detail_content"). // 忽略掉商品详情的内容
-		Where("category_id IN (?)", categoryIds).
-		Offset(offset).Limit(returnSize).
-		Find(&commodityList).Error
+								Where("category_id IN (?)", categoryIds).
+								Offset(offset).Limit(returnSize).
+								Find(&commodityList).Error
 	// 查询满足条件的记录数
 	DB().WithContext(cd.ctx).Model(model.Commodity{}).Where("category_id IN (?)", categoryIds).Count(&totalRows)
 

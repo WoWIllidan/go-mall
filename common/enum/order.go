@@ -8,6 +8,12 @@ const (
 )
 
 const (
+	PayTypeNotConfirmed = iota // 未确认 -- 创建订单时的初始状态
+	PayTypeWxPay               // 微信支付
+	PayTypeAliPay              // 支付宝
+)
+
+const (
 	OrderStatusCreated        = iota // 已创建
 	OrderStatusUnPaid                // 待支付
 	OrderStatusPaid                  // 已支付

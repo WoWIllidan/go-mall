@@ -18,4 +18,6 @@ func registerOrderRoutes(rg *gin.RouterGroup) {
 	g.GET(":order_no/info", controller.OrderInfo)
 	// 取消订单
 	g.PATCH(":order_no/cancel", controller.OrderCancel)
+	// 发起订单支付
+	g.POST("create-pay", controller.CreateOrderPay)
 }

@@ -2,6 +2,7 @@ package dao
 
 import (
 	"context"
+
 	"github.com/WoWBytePaladin/go-mall/common/errcode"
 	"github.com/WoWBytePaladin/go-mall/common/util"
 	"github.com/WoWBytePaladin/go-mall/dal/model"
@@ -143,4 +144,8 @@ func (od *OrderDao) UpdateOrderStatus(orderId int64, status int) error {
 	return DBMaster().WithContext(od.ctx).Model(model.Order{}).
 		Where("id = ?", orderId).
 		Update("order_status", status).Error
+}
+
+func (od *OrderDao) UpdateOrder(orderModel *model.Order) error {
+	return DBMaster().WithContext(od.ctx).Model(orderModel).Updates(orderModel).Error
 }
