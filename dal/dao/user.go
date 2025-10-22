@@ -78,7 +78,8 @@ func (ud *UserDao) CreateUserAddress(address *do.UserAddressInfo) (*model.UserAd
 
 	if defaultAddress != nil && defaultAddress.ID != 0 { // 存在默认地址则把原默认地址更新为非默认,然后再写入新的地址信息
 		err = DBMaster().Transaction(func(tx *gorm.DB) error {
-			// 注意: Updates 方法会忽略结构体中字段的零值, 需要配合 Select 选择要更新成零值的字段名才能更新成功
+			// 注意: Updates 方法会忽略结构体中字段的零值, 这种情况下需要配合 Select 指定要更新的字段名才能更新成功
+			// 文档 https://gorm.io/docs/update.html#Update-Selected-Fields
 			err := tx.WithContext(ud.ctx).Model(defaultAddress).Select("Default").
 				Updates(model.UserAddress{Default: enum.AddressIsNotUserDefault}).Error
 			if err != nil {
