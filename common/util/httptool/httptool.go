@@ -6,13 +6,51 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"net"
 	"net/http"
+	"sync"
 	"time"
 
 	"github.com/WoWBytePaladin/go-mall/common/errcode"
 	"github.com/WoWBytePaladin/go-mall/common/logger"
 	"github.com/WoWBytePaladin/go-mall/common/util"
 )
+
+var (
+	_Client *http.Client
+	once    sync.Once
+)
+
+func getHttpClient() *http.Client {
+	if _Client != nil {
+		// 因为Unit test里要把Client换掉, 所以虽然用了once.Do但是还是先判断一下_Client有没有实例化
+		// 不然在单测里, Mock API调用时, gock没办法拦截http client对外部API的请求
+		return _Client
+	}
+	once.Do(func() {
+		tr := &http.Transport{
+			//Proxy: http.ProxyFromEnvironment,
+			DialContext: (&net.Dialer{
+				Timeout:   30 * time.Second,
+				KeepAlive: 30 * time.Second,
+			}).DialContext,
+			MaxIdleConns:          100,
+			IdleConnTimeout:       90 * time.Second,
+			MaxIdleConnsPerHost:   50,
+			MaxConnsPerHost:       50,
+			ForceAttemptHTTP2:     true,
+			TLSHandshakeTimeout:   10 * time.Second,
+			ExpectContinueTimeout: 1 * time.Second,
+		}
+		_Client = &http.Client{Transport: tr}
+	})
+	return _Client
+}
+
+// SetUTHttpClient 让单元测试能把httpClient覆盖成具有Mock拦截设置的HttpClient
+func SetUTHttpClient(client *http.Client) {
+	_Client = client
+}
 
 func Request(method string, url string, options ...Option) (httpStatusCode int, respBody []byte, err error) {
 	start := time.Now()
@@ -34,6 +72,7 @@ func Request(method string, url string, options ...Option) (httpStatusCode int, 
 	if err != nil {
 		return
 	}
+	reqOpts.ctx, _ = context.WithTimeout(reqOpts.ctx, reqOpts.timeout) // 给 Request 设置Timeout
 	req = req.WithContext(reqOpts.ctx)
 	defer req.Body.Close()
 
@@ -47,7 +86,7 @@ func Request(method string, url string, options ...Option) (httpStatusCode int, 
 		}
 	}
 	// 发起请求
-	client := &http.Client{Timeout: reqOpts.timeout}
+	client := getHttpClient()
 	resp, err := client.Do(req)
 	if err != nil {
 		return
@@ -55,11 +94,13 @@ func Request(method string, url string, options ...Option) (httpStatusCode int, 
 	defer resp.Body.Close()
 	// 记录请求日志
 	dur := time.Since(start).Milliseconds()
-	if dur >= 3000 { // 超过 3秒 返回, 记一条 Warn 日志
-		log.Warn("HTTP_REQUEST_SLOW_LOG", "method", method, "url", url, "body", reqOpts.data, "reply", respBody, "err", err, "dur/ms", dur)
-	} else {
-		log.Debug("HTTP_REQUEST_DEBUG_LOG", "method", method, "url", url, "body", reqOpts.data, "reply", respBody, "err", err, "dur/ms", dur)
-	}
+	defer func() {
+		if dur >= 3000 { // 超过 3s 返回, 记一条 Warn 日志
+			log.Warn("HTTP_REQUEST_SLOW_LOG", "method", method, "url", url, "body", reqOpts.data, "reply", respBody, "err", err, "dur/ms", dur)
+		} else {
+			log.Debug("HTTP_REQUEST_DEBUG_LOG", "method", method, "url", url, "body", string(reqOpts.data), "reply", string(respBody), "err", err, "dur/ms", dur)
+		}
+	}()
 
 	httpStatusCode = resp.StatusCode
 	if httpStatusCode != http.StatusOK {
