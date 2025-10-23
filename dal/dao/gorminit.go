@@ -54,3 +54,13 @@ func initDB(option config.DbConnectOption) *gorm.DB {
 	}
 	return db
 }
+
+// SetDBMasterConn 设置连接对象 -- 只用在单测中把DB连接改成sqlMock的DB连接
+func SetDBMasterConn(conn *gorm.DB) {
+	_DbMaster = conn
+}
+
+// SetDBSlaveConn 设置连接对象 -- 只用在单测中把DB连接改成sqlMock的DB连接
+func SetDBSlaveConn(conn *gorm.DB) {
+	_DbSlave = conn
+}
